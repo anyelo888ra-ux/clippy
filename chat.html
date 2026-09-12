@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clippy AI - Tu asistente revivido</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo-wrap">
+            <span class="clippy-icon">📎</span>
+            <h1>Clippy <span class="gradient">AI</span></h1>
+        </div>
+        <a href="https://github.com/anyelo888ra-ux/clippy-ai" target="_blank" class="badge">
+            <span class="status-dot"></span>
+            <span>Open Source</span>
+        </a>
+    </header>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="message-wrapper ai-wrapper">
+            <div class="clippy-avatar">📎</div>
+            <div class="message ai-message">
+                ¡Hola! Soy <strong>Clippy</strong> 📎<br><br>
+                El asistente más legendario de Microsoft Office ha vuelto.<br><br>
+                Pero esta vez, <strong>sin ser tan molesto</strong>. 😊<br><br>
+                ¿En qué te puedo ayudar hoy?
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-box">
+            <textarea id="userInput" placeholder="Escribe un mensaje a Clippy..." rows="1"></textarea>
+            <button class="send-btn" id="sendBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+        <div class="disclaimer">
+            <span>●</span> Clippy AI • Sin IA pesada • Personalidad retro
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <button onclick="accionRapida('ayuda')">💡 Ayuda</button>
+        <button onclick="accionRapida('chiste')">😂 Chiste</button>
+        <button onclick="accionRapida('codigo')">💻 Código</button>
+        <button onclick="accionRapida('saludo')">👋 Saludo</button>
+    </div>
+
+    <!-- ============================================
+         LOGIN CON DISCORD (Supabase)
+         ============================================ -->
+    <div id="auth-container"></div>
+
+    <!-- ============================================
+         WIDGET DE DISCORD (flotante)
+         ============================================ -->
+    <div id="discord-widget-container">
+        <button id="toggle-widget" title="Ver Discord">💬</button>
+        <div id="discord-widget" style="display: none;">
+            <iframe 
+                src="https://discord.com/widget?id=1548137099700604978&theme=dark" 
+                width="350" 
+                height="500" 
+                allowtransparency="true" 
+                frameborder="0" 
+                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
+            </iframe>
+        </div>
+    </div>
+
+    <style>
+        /* ============================================
+           LOGIN CON DISCORD (esquina inferior izquierda)
+           ============================================ */
+        .auth-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #5865F2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(88, 101, 242, 0.4);
+            transition: all 0.3s;
+            z-index: 50;
+            font-family: inherit;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.6);
+        }
+
+        .auth-user {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(88, 101, 242, 0.15);
+            border: 1px solid rgba(88, 101, 242, 0.3);
+            padding: 8px 16px 8px 8px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 50;
+            font-size: 14px;
+        }
+
+        .auth-user img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #5865F2;
+        }
+
+        .auth-user .info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .auth-user .info strong {
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .auth-user .info small {
+            color: #a78bfa;
+            font-size: 11px;
+        }
+
+        .auth-logout {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            margin-left: 4px;
+            transition: transform 0.2s;
+            border-radius: 50%;
+        }
+
+        .auth-logout:hover {
+            transform: scale(1.2);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ============================================
+           WIDGET DE DISCORD (esquina inferior derecha)
+           ============================================ */
+        #discord-widget-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            font-family: inherit;
+        }
+
+        #toggle-widget {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #5865F2;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(88, 101, 242, 0.5);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toggle-widget:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(88, 101, 242, 0.7);
+        }
+
+        #discord-widget {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            animation: slideUp 0.3s ease;
+        }
+
+        #discord-widget iframe {
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: none;
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 640px) {
+            .auth-btn, .auth-user {
+                bottom: 15px;
+                left: 15px;
+                font-size: 12px;
+                padding: 10px 16px;
+            }
+            .auth-user img {
+                width: 30px;
+                height: 30px;
+            }
+            #discord-widget-container {
+                bottom: 15px;
+                right: 15px;
+            }
+            #toggle-widget {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            #discord-widget iframe {
+                width: 300px;
+                height: 400px;
+            }
+        }
+    </style>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        // ============================================
+        // ⚠️ REEMPLAZA ESTO CON TUS DATOS DE SUPABASE
+        // ============================================
+        const SUPABASE_URL = 'https://dppaqhiucepnrhfcvazv.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_OgDOFs-FOi1mq7U-5qnVtg_7Ho9JfY2'; // ← Reemplaza con tu anon key
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // ⚠️ EXPONER SUPABASE GLOBALMENTE para clippy.js
+        window.supabaseClient = supabase;
+
+        const authContainer = document.getElementById('auth-container');
+
+        // Renderizar UI según el estado de sesión
+        async function renderAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                const user = session.user;
+                const avatarUrl = user.user_metadata.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                const displayName = user.user_metadata.full_name 
+                    || user.user_metadata.name 
+                    || user.user_metadata.preferred_username 
+                    || 'Usuario';
+                // Quitar el #0 del username
+                const username = (user.user_metadata.preferred_username 
+                    || user.user_metadata.name 
+                    || 'user').split('#')[0];
+
+                authContainer.innerHTML = `
+                    <div class="auth-user">
+                        <img src="${avatarUrl}" alt="Avatar">
+                        <div class="info">
+                            <strong>${displayName}</strong>
+                            <small>@${username}</small>
+                        </div>
+                        <button class="auth-logout" onclick="cerrarSesion()" title="Cerrar sesión">✕</button>
+                    </div>
+                `;
+            } else {
+                authContainer.innerHTML = `
+                    <button class="auth-btn" onclick="iniciarSesion()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                        </svg>
+                        Iniciar sesión con Discord
+                    </button>
+                `;
+            }
+        }
+
+        window.iniciarSesion = async function() {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'discord',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname,
+                    scopes: 'identify email'
+                }
+            });
+
+            if (error) {
+                console.error('Error:', error);
+                alert('Error al iniciar sesión: ' + error.message);
+            }
+        };
+
+        window.cerrarSesion = async function() {
+            const { error } = await supabase.auth.signOut();
+            if (!error) {
+                location.reload();
+            }
+        };
+
+        renderAuth();
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth event:', event);
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+                renderAuth();
+            }
+        });
+    </script>
+
+    <!-- Widget de Discord toggle -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleWidget = document.getElementById('toggle-widget');
+            const discordWidget = document.getElementById('discord-widget');
+
+            toggleWidget.addEventListener('click', () => {
+                if (discordWidget.style.display === 'none') {
+                    discordWidget.style.display = 'block';
+                } else {
+                    discordWidget.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
+    <script src="clippy.js"></script>
+</body>
+</html>
