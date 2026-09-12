@@ -58,4 +58,24 @@
 ---
 
 ## 📁 Estructura del Proyecto
- 
+
+ clippy/
+├── index.html # Estructura HTML
+├── styles.css # Estilos y animaciones
+├── clippy.js # Cerebro + personalidad
+├── .nojekyll # Para GitHub Pages
+├── LICENSE # Licencia MIT
+└── README.md # Este archivo
+
+
+---
+
+## 🚀 Cómo usar
+
+### Opción 1: Ver la demo
+Visita [https://anyelo888ra-ux.github.io/clippy](https://anyelo888ra-ux.github.io/clippy)
+
+### Opción 2: Clonar el repo
+```bash
+git clone https://github.com/anyelo888ra-ux/clippy.git
+cd clippy
