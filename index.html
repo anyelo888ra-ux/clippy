@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clippy AI - Tu asistente revivido</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo-wrap">
+            <span class="clippy-icon">📎</span>
+            <h1>Clippy <span class="gradient">AI</span></h1>
+        </div>
+        <a href="https://github.com/anyelo888ra-ux/clippy-ai" target="_blank" class="badge">
+            <span class="status-dot"></span>
+            <span>Open Source</span>
+        </a>
+    </header>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="message-wrapper ai-wrapper">
+            <div class="clippy-avatar">📎</div>
+            <div class="message ai-message">
+                ¡Hola! Soy <strong>Clippy</strong> 📎<br><br>
+                El asistente más legendario de Microsoft Office ha vuelto.<br><br>
+                Pero esta vez, <strong>sin ser tan molesto</strong>. 😊<br><br>
+                ¿En qué te puedo ayudar hoy?
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-box">
+            <textarea id="userInput" placeholder="Escribe un mensaje a Clippy..." rows="1"></textarea>
+            <button class="send-btn" id="sendBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+        <div class="disclaimer">
+            <span>●</span> Clippy AI • Sin IA pesada • Personalidad retro
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <button onclick="accionRapida('ayuda')">💡 Ayuda</button>
+        <button onclick="accionRapida('chiste')">😂 Chiste</button>
+        <button onclick="accionRapida('codigo')">💻 Código</button>
+        <button onclick="accionRapida('saludo')">👋 Saludo</button>
+    </div>
+
+    <script src="clippy.js"></script>
+</body>
+</html>
