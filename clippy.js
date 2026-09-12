@@ -1,10 +1,54 @@
 // ============================
 // CLIPPY AI - Cerebro + Personalidad
+// Con Supabase: historial, stats, preferencias
 // ============================
 
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
+
+// ============================
+// SUPABASE CLIENT
+// ============================
+let supabase = null;
+let currentUser = null;
+
+// Esperar a que Supabase esté inicializado (viene de index.html)
+async function initSupabase() {
+    // Buscar el cliente de Supabase que se crea en index.html
+    // Esperamos a que esté disponible globalmente
+    let intentos = 0;
+    while (!window.supabaseClient && intentos < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        intentos++;
+    }
+    
+    if (window.supabaseClient) {
+        supabase = window.supabaseClient;
+        
+        // Verificar sesión actual
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            console.log('👤 Usuario logueado:', currentUser.email);
+            await inicializarUsuario(currentUser);
+            await cargarHistorial(currentUser);
+        }
+        
+        // Escuchar cambios de sesión
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                currentUser = session.user;
+                await inicializarUsuario(currentUser);
+                await cargarHistorial(currentUser);
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                chatContainer.innerHTML = '';
+                agregarMensajeInicial();
+            }
+        });
+    }
+}
 
 // ============================
 // RESPUESTAS POR PATRÓN
@@ -159,20 +203,170 @@ const respuestasGenericas = [
 // BUSCAR RESPUESTA
 // ============================
 function buscarRespuesta(mensaje) {
-    // Buscar en patrones
     for (const patron of patrones) {
         if (patron.regex.test(mensaje)) {
             const respuestas = patron.respuestas;
             return respuestas[Math.floor(Math.random() * respuestas.length)];
         }
     }
-    // Fallback genérico
     return respuestasGenericas[Math.floor(Math.random() * respuestasGenericas.length)];
+}
+
+// ============================
+// SUPABASE: INICIALIZAR USUARIO
+// ============================
+async function inicializarUsuario(user) {
+    if (!supabase) return;
+    
+    try {
+        // Verificar si ya existe en user_stats
+        const { data: stats, error } = await supabase
+            .from('user_stats')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+        
+        // Si no existe, crear stats iniciales
+        if (error || !stats) {
+            console.log('🆕 Creando stats para nuevo usuario...');
+            await supabase
+                .from('user_stats')
+                .insert([{
+                    user_id: user.id,
+                    messages_count: 0,
+                    level: 1,
+                    badges: []
+                }]);
+        }
+        
+        // Verificar preferencias
+        const { data: prefs, error: prefsError } = await supabase
+            .from('preferences')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+        
+        if (prefsError || !prefs) {
+            console.log('🆕 Creando preferencias para nuevo usuario...');
+            await supabase
+                .from('preferences')
+                .insert([{
+                    user_id: user.id,
+                    theme: 'dark',
+                    language: 'es',
+                    notifications: true
+                }]);
+        }
+        
+        console.log('✅ Usuario inicializado');
+    } catch (e) {
+        console.error('❌ Error inicializando usuario:', e);
+    }
+}
+
+// ============================
+// SUPABASE: GUARDAR MENSAJE
+// ============================
+async function guardarMensaje(role, content) {
+    if (!supabase || !currentUser) return;
+    
+    try {
+        await supabase
+            .from('chat_history')
+            .insert([{
+                user_id: currentUser.id,
+                role: role,
+                content: content
+            }]);
+    } catch (e) {
+        console.error('❌ Error guardando mensaje:', e);
+    }
+}
+
+// ============================
+// SUPABASE: CARGAR HISTORIAL
+// ============================
+async function cargarHistorial(user) {
+    if (!supabase) return;
+    
+    try {
+        const { data, error } = await supabase
+            .from('chat_history')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true })
+            .limit(50);
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            chatContainer.innerHTML = '';
+            data.forEach(msg => {
+                if (msg.role === 'user') {
+                    agregarMensajeUsuario(msg.content);
+                } else {
+                    agregarMensajeClippy(msg.content);
+                }
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            console.log(`📚 ${data.length} mensajes cargados del historial`);
+        }
+    } catch (e) {
+        console.error('❌ Error cargando historial:', e);
+    }
+}
+
+// ============================
+// SUPABASE: ACTUALIZAR STATS
+// ============================
+async function actualizarStats() {
+    if (!supabase || !currentUser) return;
+    
+    try {
+        // Obtener stats actuales
+        const { data: stats } = await supabase
+            .from('user_stats')
+            .select('messages_count, level')
+            .eq('user_id', currentUser.id)
+            .single();
+        
+        if (stats) {
+            const newCount = stats.messages_count + 1;
+            const newLevel = Math.floor(newCount / 10) + 1;
+            
+            await supabase
+                .from('user_stats')
+                .update({
+                    messages_count: newCount,
+                    level: newLevel,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', currentUser.id);
+            
+            console.log(`📊 Stats: ${newCount} mensajes, nivel ${newLevel}`);
+        }
+    } catch (e) {
+        console.error('❌ Error actualizando stats:', e);
+    }
 }
 
 // ============================
 // UI
 // ============================
+function agregarMensajeInicial() {
+    chatContainer.innerHTML = `
+        <div class="message-wrapper ai-wrapper">
+            <div class="clippy-avatar">📎</div>
+            <div class="message ai-message">
+                ¡Hola! Soy <strong>Clippy</strong> 📎<br><br>
+                El asistente más legendario de Microsoft Office ha vuelto.<br><br>
+                Pero esta vez, <strong>sin ser tan molesto</strong>. 😊<br><br>
+                ¿En qué te puedo ayudar hoy?
+            </div>
+        </div>
+    `;
+}
+
 function agregarMensajeUsuario(texto) {
     const wrapper = document.createElement('div');
     wrapper.className = 'message-wrapper user-wrapper';
@@ -221,24 +415,35 @@ function escapeHtml(text) {
 // ============================
 // ENVIAR MENSAJE
 // ============================
-function enviarMensaje() {
+async function enviarMensaje() {
     const texto = userInput.value.trim();
     if (!texto) return;
 
+    // Mostrar mensaje del usuario
     agregarMensajeUsuario(texto);
     userInput.value = '';
     userInput.style.height = 'auto';
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
+    // Guardar en Supabase (si está logueado)
+    await guardarMensaje('user', texto);
+
+    // Typing indicator
     const typingId = agregarEscribiendo();
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     // Simular retraso humano (300-800 ms)
-    setTimeout(() => {
+    setTimeout(async () => {
         removerEscribiendo(typingId);
         const respuesta = buscarRespuesta(texto);
         agregarMensajeClippy(respuesta);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // Guardar respuesta en Supabase
+        await guardarMensaje('assistant', respuesta);
+
+        // Actualizar stats
+        await actualizarStats();
     }, 400 + Math.random() * 400);
 }
 
@@ -279,3 +484,7 @@ sendBtn.addEventListener('click', enviarMensaje);
 console.log('📎 Clippy AI iniciado');
 console.log('🎭 Personalidad: Retro pero educado');
 console.log('⚡ Sin IA pesada, carga instantánea');
+console.log('💾 Integración con Supabase activada');
+
+// Iniciar Supabase
+initSupabase();
